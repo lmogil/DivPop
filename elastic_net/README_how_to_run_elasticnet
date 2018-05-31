@@ -1,0 +1,9 @@
+This is a step by step explanation of how to set up and run elastic net models 
+1. Edit mesa_pops2.txt to contain the population headers for analysis
+2. Edit mesa_peers.txt to contain the different peer factors required for analysis
+3. Edit mesa_covars.txt to have the number of genotype PCs taken into account
+4. Edit pop_train_combos.R to contain all of the correct file paths and input file names
+5. Edit gtex_v7_nested_cv_elnet_combo.R to output the correct files to the correct output directory
+6. Run train_models_jobs_combo.sh 
+7. Run make_dbs.R
+8. Run filter_dbs.R
