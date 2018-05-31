@@ -1,0 +1,66 @@
+---
+title: "09_plot_simu-exp_res"
+author: "Heather Wheeler"
+date: '`r Sys.time()`'
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+"%&%" = function(a,b) paste(a,b,sep="")
+date <- Sys.Date()
+my.dir <- "/home/wheelerlab3/mesa_analyses/"
+
+#read in EXP-SIM rG results
+for(pop in c('AFA-CAU','AFA-HIS','CAU-HIS')){
+  obs <- fread(my.dir %&% "GCTA_exp/" %&% pop %&% "_MESA_Nk-20.local-h2_gen-corr.2017-07-21.txt") %>% 
+    dplyr::mutate(data="obs")
+  sims <- obs
+  filelist <- scan(my.dir %&% "GCTA_exp/" %&% pop %&% "filelist", "c")
+  for(i in c(1:10)){
+    file <- filelist[i]
+    a <- fread(my.dir %&% "GCTA_exp/" %&% file) %>% dplyr::mutate(data="sim" %&% i)
+    sims <- rbind(sims, a)
+
+  }
+  print(ggplot(sims,aes(x=rG, color=data)) + geom_density() + ggtitle(pop) +
+    scale_color_manual(values = c('red',gray.colors(10, start=0.5))) + theme_classic(14))
+  summary(sims)
+
+  print(ggplot(sims,aes(x=data,y=rG)) + geom_boxplot() + ggtitle(pop))
+  print(ggplot(sims,aes(x=data,y=rG)) + geom_violin() + ggtitle(pop) + stat_summary(fun.y=mean, geom="point", color="blue", size=3))
+
+  print(ggplot(sims,aes(x=pop1.h2,y=rG)) + geom_smooth() + facet_wrap(~data) + ggtitle(pop))
+  rm(sims)
+}
+```
+
+```{r, fig.width=10}
+for(pop in c('AFA-CAU','AFA-HIS','CAU-HIS')){
+  obs <- fread(my.dir %&% "GCTA_exp/" %&% pop %&% "_MESA_Nk-20.local-h2_gen-corr.2017-07-21.txt") %>% 
+    dplyr::mutate(data="obs " %&% pop)
+  if(exists('sims')){
+    sims <- rbind(sims, obs)
+  }else{
+    sims <- obs
+  }
+  filelist <- scan(my.dir %&% "GCTA_exp/" %&% pop %&% "filelist", "c")
+  for(i in c(1:10)){
+    file <- filelist[i]
+    a <- fread(my.dir %&% "GCTA_exp/" %&% file) %>% dplyr::mutate(data="sim " %&% pop)
+    sims <- rbind(sims, a)
+  }
+}
+print(ggplot(sims,aes(x=rG, color=data)) + geom_density() + ggtitle(pop))
+summary(sims)
+
+print(ggplot(sims,aes(x=data,y=rG)) + geom_boxplot() + ggtitle(pop))
+print(ggplot(sims,aes(x=data,y=rG)) + geom_violin() + ggtitle(pop) + stat_summary(fun.y=mean, geom="point", color="blue", size=3))
+
+print(ggplot(sims,aes(x=pop1.h2,y=rG)) + geom_smooth() + facet_wrap(~data) + ggtitle(pop))
+rm(sims)
+
+```
+

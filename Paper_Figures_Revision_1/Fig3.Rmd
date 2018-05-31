@@ -1,0 +1,299 @@
+---
+title: "Fig. 3"
+author: "Heather Wheeler"
+date: "`r Sys.time()`"
+output: html_document
+---
+
+### R code for Figures in Mogil et al. "Genetic architecture of gene expression traits across diverse populations" <https://doi.org/10.1101/245761>
+- Revision 1, submitted June 1, 2018
+- Figure 3
+- Table 3
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(viridis)
+library(tidyr)
+library(xtable)
+
+"%&%" = function(a,b) paste(a,b,sep="")
+```
+
+```{r,fig.width=8,fig.height=3}
+my.dir <- "/home/wheelerlab3/mesa_analyses/"
+#read in BSLMM
+for(pop in c('AFA','CAU','HIS')){
+  filelist <- scan(my.dir %&% "BSLMM_exp/" %&% pop %&% "filelist", "c")
+  for(file in filelist){
+    a <- fread(my.dir %&% "BSLMM_exp/" %&% file) %>%
+      dplyr::mutate(pop=pop)
+    if(exists('bslmm')){
+      bslmm <- rbind(bslmm, a)
+    }else{
+      bslmm <- a
+    }
+  }
+}
+
+#read in BVSR
+for(pop in c('AFA','CAU','HIS')){
+  filelist <- scan(my.dir %&% "BVSR_exp/" %&% pop %&% "filelist", "c")
+  for(file in filelist){
+    a <- fread(my.dir %&% "BVSR_exp/" %&% file) %>%
+      dplyr::mutate(pop=pop)
+    if(exists('bvsr')){
+      bvsr <- rbind(bvsr, a)
+    }else{
+      bvsr <- a
+    }
+  }
+}
+```
+
+```{r, fig.width=10,fig.height=3.5}
+#join by ensg
+all <- left_join(bslmm,bvsr,by=c('gene','pop'))
+
+summary(lm(hh50~pve50,all))
+summary(lm(hh50~pve50,all))$coefficients
+cor.test(all$hh50,all$pve50)
+cor.test(all$hh50,all$pve50,method='s')
+#make plot like this for elastic net alpha comparison? LASSO vs. EN (colored by alpha=0.5 or 0.05)
+# ggplot(all,aes(x=pve50,y=hh50)) + geom_point() + facet_wrap(~pop) + geom_abline(slope=1,intercept = 0,color='blue') + theme_bw(14) +
+#   xlab('BSLMM PVE') + ylab('BVSR PVE')
+# ggplot(all,aes(x=pve50,y=hh50,color=pge50)) + geom_point() + facet_wrap(~pop) + geom_abline(slope=1,intercept = 0)
+# ggplot(all,aes(x=pve50,y=hh50,color=snp50)) + geom_point() + facet_wrap(~pop) + geom_abline(slope=1,intercept = 0) 
+# ggplot(all,aes(x=pve50,y=hh50,color=n_gamma50)) + geom_point() + facet_wrap(~pop) + geom_abline(slope=1,intercept = 0)
+
+cor.test(all$snp50,all$n_gamma50)
+cor.test(all$snp50,all$n_gamma50,method='s')
+# ggplot(all,aes(x=n_gamma50, y=snp50)) + geom_density_2d() + facet_wrap(~pop)
+# ggplot(all,aes(x=n_gamma50, y=snp50, color=hh50)) + geom_point() + facet_wrap(~pop)
+
+data <- all %>% mutate(position=1:length(pve50),`medianSNPs<=10`=n_gamma50<=10,LCS=factor(pge025<=0.01,labels=c('> 0.01','<= 0.01')))
+# ggplot(data,aes(x=pve50,y=pge50,ymin=pge025,ymax=pge975,col=LCS)) + geom_pointrange(col='gray') + geom_point() + theme_bw(12) + xlab("PVE") + ylab("PGE") + theme(legend.position = c(1,0),legend.justification = c(1,0)) + facet_wrap(~pop)
+
+ngenes <- dim(all)[1]/3
+sorted <- dplyr::arrange(all,pop,pve50) %>% mutate(order=rep(c(1:ngenes),3))
+# ggplot(sorted,aes(x=order,y=pve50,ymin=pve025,ymax=pve975)) + geom_pointrange(col='gray') + geom_point() + facet_wrap(~pop)
+
+sorted <- dplyr::arrange(all,pop,hh50) %>% mutate(order=rep(c(1:ngenes),3))
+# ggplot(sorted,aes(x=order,y=hh50,ymin=hh025,ymax=hh975)) + geom_pointrange(col='gray') + geom_point() + facet_wrap(~pop)
+```
+
+### BSLMM Sup Fig
+```{r}
+pve <- dplyr::select(all, pop, gene, pve50, hh50)
+
+h2_afa <- read.table(my.dir %&% "GCTA_exp/AFA_MESA_Nk-20.local-h2.2017-07-11.txt",header=T) %>% mutate(h2=local.h2,pop='AFA') %>% dplyr::select(ensid,h2,pop)
+h2_cau <- read.table(my.dir %&% "GCTA_exp/CAU_MESA_Nk-20.local-h2.2017-07-11.txt",header=T) %>% mutate(h2=local.h2,pop='CAU') %>% dplyr::select(ensid,h2,pop)
+h2_his <- read.table(my.dir %&% "GCTA_exp/HIS_MESA_Nk-20.local-h2.2017-07-11.txt",header=T) %>% mutate(h2=local.h2,pop='HIS') %>% dplyr::select(ensid,h2,pop)
+h2_res <- rbind(h2_afa,h2_cau,h2_his)
+
+afa <- fread("/home/lauren/files_for_revisions_plosgen/fst_results/fst_table_AFA.txt")
+mean_afa <- afa[,list(R2_AFA=mean(R2_AFA, na.rm = TRUE), R2_CAU=mean(R2_CAU, na.rm = TRUE), 
+  R2_HIS=mean(R2_HIS, na.rm = TRUE)),
+  by=GENE]
+r2_afa <- dplyr::select(mean_afa,GENE,R2_AFA) %>% mutate(R2=R2_AFA,pop="AFA") %>% dplyr::select(GENE,R2,pop)
+r2_cau <- dplyr::select(mean_afa,GENE,R2_CAU) %>% mutate(R2=R2_CAU,pop="CAU") %>% dplyr::select(GENE,R2,pop)
+r2_his <- dplyr::select(mean_afa,GENE,R2_HIS) %>% mutate(R2=R2_HIS,pop="HIS") %>% dplyr::select(GENE,R2,pop)
+r2_res <- rbind(r2_afa,r2_cau,r2_his)
+
+mega <- left_join(pve, h2_res, by=c('gene'='ensid','pop'))
+mega <- left_join(mega,r2_res,by=c('gene'='GENE','pop'))
+
+#rm NAs for plotting
+mega <- mega[complete.cases(mega),]
+
+###need to make h2 and R2 long to facet
+b <- ggplot(mega,aes(x=pve50,y=h2,col=R2)) + geom_point() + facet_wrap(~pop) + geom_abline(slope=1,intercept = 0,color='blue') + theme_bw(14) + labs(x='BSLMM PVE',y=expression(paste('GCTA ', h^2)),col=expression(R^2),title='B') + theme(legend.position = c(0.995,0.005),legend.justification = c(1,0),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.3, "cm"),plot.margin=unit(c(0.1,0.2,0.1,0.2), "cm")) + scale_color_viridis()
+
+#make plot like this for elastic net alpha comparison? LASSO vs. EN (colored by alpha=0.5 or 0.05)
+c <- ggplot(mega,aes(x=pve50,y=hh50,col=R2)) + geom_point() + facet_wrap(~pop) + geom_abline(slope=1,intercept = 0,color='blue') + theme_bw(14) + labs(x='BSLMM PVE',y='BVSR PVE',col=expression(R^2),title='C') + theme(legend.position = c(0.995,0.005),legend.justification = c(1,0),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.3, "cm"),plot.margin=unit(c(0.1,0.2,0.1,0.2), "cm")) + 
+  scale_color_viridis()
+
+sfigA <- ggplot(data,aes(x=pve50,y=pge50,ymin=pge025,ymax=pge975,col=LCS)) + geom_pointrange(col='gray') + geom_point(shape=1) + theme_bw(14) + xlab("BLSMM PVE") + ylab("BSLMM PGE") + theme(legend.position = c(0.995,0.005),legend.justification = c(1,0),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.3, "cm"),plot.margin=unit(c(0.1,0.2,0.1,0.2), "cm")) + facet_wrap(~pop) + ggtitle('A') +
+  scale_color_viridis(discrete=TRUE)
+
+cor(mega[,-1:-2],method='s')
+```
+
+
+### plot BSLMM and ENET
+- if test_R2_avg < 0, set to NA
+- We want test_R2_avg, this is the 5-fold CV R2 from gtex_v7_nested_cv_elnet_combo.R
+- <https://github.com/lmogil/predictDB_mesa_peer_pc_combos/blob/master/en_v7/model_training/scripts/gtex_v7_nested_cv_elnet_combo.R>
+- <https://s3.amazonaws.com/predictdb2/GTEx-V7_HapMap-2017-11-29_README.txt>
+
+```{r}
+#read in alpha=1
+for(pop in c('AFA','CAU','HIS')){
+  a <- fread('/home/lauren/files_for_revisions_plosgen/en_v7/new_output_alphas/' %&% pop %&%
+               '_nested_cv_all_model_summaries_10_peer_3pcs_a1.txt') %>%
+    dplyr::mutate(pop=pop,test_R2_avg_1=ifelse(test_R2_avg<0,NA,test_R2_avg),cv_R2_avg_1=ifelse(cv_R2_avg<0,NA,cv_R2_avg), in_sample_R2_1=in_sample_R2) %>% dplyr::select(gene_id,pop,alpha,test_R2_avg_1,cv_R2_avg_1,in_sample_R2_1)
+  if(exists('alpha1')){
+    alpha1 <- rbind(alpha1, a)
+  }else{
+    alpha1 <- a
+  }
+}
+
+
+
+summary(filter(alpha1,pop=='AFA'))
+summary(filter(alpha1,pop=='CAU'))
+summary(filter(alpha1,pop=='HIS'))
+
+#read in alpha=0.05
+for(pop in c('AFA','CAU','HIS')){
+  a <- fread('/home/lauren/files_for_revisions_plosgen/en_v7/new_output_alphas/' %&% pop %&%
+               '_nested_cv_all_model_summaries_10_peer_3pcs_a0.05.txt') %>%
+    dplyr::mutate(pop=pop,test_R2_avg_05=ifelse(test_R2_avg<0,NA,test_R2_avg),cv_R2_avg_05=ifelse(cv_R2_avg<0,NA,cv_R2_avg), in_sample_R2_05=in_sample_R2) %>% dplyr::select(gene_id,pop,alpha,test_R2_avg_05, cv_R2_avg_05,in_sample_R2_05)
+  if(exists('alpha05')){
+    alpha05 <- rbind(alpha05, a)
+  }else{
+    alpha05 <- a
+  }
+}
+
+summary(filter(alpha05,pop=='AFA'))
+summary(filter(alpha05,pop=='CAU'))
+summary(filter(alpha05,pop=='HIS'))
+
+#read in alpha=0.5
+for(pop in c('AFA','CAU','HIS')){
+  a <- fread('/home/lauren/files_for_revisions_plosgen/en_v7/new_output/' %&% pop %&%
+               '_nested_cv_all_model_summaries_10_peer_3pcs.txt') %>%
+    dplyr::mutate(pop=pop,test_R2_avg_5=ifelse(test_R2_avg<0,NA,test_R2_avg),cv_R2_avg_5=ifelse(cv_R2_avg<0,NA,cv_R2_avg), in_sample_R2_5=in_sample_R2) %>% dplyr::select(gene_id,pop,alpha,test_R2_avg_5,cv_R2_avg_5,in_sample_R2_5)
+  if(exists('alpha5')){
+    alpha5 <- rbind(alpha5, a)
+  }else{
+    alpha5 <- a
+  }
+}
+
+summary(filter(alpha5,pop=='AFA'))
+summary(filter(alpha5,pop=='CAU'))
+summary(filter(alpha5,pop=='HIS'))
+
+enet <- left_join(alpha05,alpha5,by=c("gene_id","pop"))
+enet <- left_join(enet,alpha1,by=c("gene_id","pop"))
+
+giga <- left_join(enet,mega,by=c("gene_id"="gene","pop"))
+
+#rm(alpha05,alpha5,alpha1)
+```
+
+```{r,fig.width=8,fig.height=3}
+
+#bland-altman
+ba1 <- left_join(alpha1,alpha5,by=c('gene_id','pop')) %>% mutate(diffR2=test_R2_avg_1-test_R2_avg_5) %>%
+  select(gene_id,pop,alpha.y,test_R2_avg_1,diffR2)
+ba2 <- left_join(alpha1,alpha05,by=c('gene_id','pop')) %>% mutate(diffR2=test_R2_avg_1-test_R2_avg_05) %>%
+  select(gene_id,pop,alpha.y,test_R2_avg_1,diffR2)
+ba <- rbind(ba1,ba2) %>% mutate(alpha = factor(alpha.y,levels=c('0.05','0.5')),gt0=diffR2>0) 
+fig3a <- ggplot(ba, aes(x=test_R2_avg_1,y=diffR2,col=alpha)) + geom_point(shape=1) + 
+  scale_color_viridis(discrete=TRUE) + labs(x=expression(paste('lasso ',R^2)),y=expression(paste(R^2, ' difference (lasso - ',alpha,')')),col=expression(alpha),title='A') +  geom_hline(yintercept = 0,col='darkgray') +  coord_cartesian(ylim=c(-0.6,0.6)) +
+  facet_wrap(~pop) + theme_bw(14) + theme(legend.justification=c(0,0), legend.position=c(0.9,0.01),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.4, "cm"))
+
+fig3b <- ggplot(ba, aes(x=test_R2_avg_1,y=diffR2,col=alpha)) + geom_density_2d() +
+  scale_color_viridis(discrete=TRUE) + labs(x=expression(paste('lasso ',R^2, ' ZOOM')),y=expression(paste(R^2, ' difference (lasso - ',alpha,')')),col=expression(alpha),title='B') + 
+  geom_hline(yintercept = 0,col='darkgray') + coord_cartesian(ylim=c(-0.08,0.08)) +
+  facet_wrap(~pop) + theme_bw(14) + theme(legend.justification=c(0,0), legend.position=c(0.9,0.01),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.4, "cm"))
+
+#make table of diffR2 > 0 counts/percents
+for(p in c('AFA','CAU','HIS')){
+  ba_sub <- dplyr::filter(ba,pop==p,alpha==0.05)
+  poscount05 <- table(ba_sub$diffR2>0)[[2]]
+  negcount05 <- table(ba_sub$diffR2<0)[[2]]
+  total05 <- sum(table(ba_sub$diffR2>0))
+  prop05 <- signif(poscount05/total05,3)
+  ba_sub <- dplyr::filter(ba,pop==p,alpha==0.5)
+  poscount5 <- table(ba_sub$diffR2>0)[[2]]
+  negcount5 <- table(ba_sub$diffR2<0)[[2]]
+  total5 <- sum(table(ba_sub$diffR2>0))
+  prop5 <- signif(poscount5/total5,3)
+  restab <- c(p,poscount05,total05,prop05,poscount5,total5,prop5)
+  if(exists('diffR2_tab')){
+    diffR2_tab <- rbind(diffR2_tab, restab)
+  }else{
+    diffR2_tab <- restab
+  }
+}
+colnames(diffR2_tab) <- c("pop","poscount_05","total_05","prop_05","poscount_5","total_5","prop_5")
+print(diffR2_tab)
+xtable(diffR2_tab)
+
+
+```
+
+#BSLMM plot with test_avg_R2
+```{r,fig.width=8,fig.height=3}
+keygiga <- dplyr::select(giga,test_R2_avg_05,test_R2_avg_5,test_R2_avg_1,pve50,hh50,h2)
+cor(keygiga, use='pairwise',method='s')
+```
+
+```{r,fig.width=8,fig.height=3}
+abvsr <- left_join(alpha5,mega,by=c('gene_id'='gene','pop')) %>% mutate(model='BVSR',PVE=hh50)
+abslmm <- left_join(alpha5,mega,by=c('gene_id'='gene','pop')) %>% mutate(model='BSLMM',PVE=pve50)
+agcta <- left_join(alpha5,mega,by=c('gene_id'='gene','pop')) %>% mutate(model='LMM',PVE=h2)
+aplot <- rbind(abvsr, abslmm, agcta)
+
+
+bvsrba1 <- mutate(mega,diffPVE=hh50-pve50,model='BSLMM') %>% dplyr::select(pop,gene,hh50,diffPVE,model)
+bvsrba2 <- mutate(mega,diffPVE=hh50-h2,model='LMM') %>% dplyr::select(pop,gene,hh50,diffPVE,model)
+bvsrba <- rbind(bvsrba1,bvsrba2) %>% mutate(model=factor(model,levels=c('LMM','BSLMM')))
+
+```
+## do BSLMM on x-axis
+```{r}
+bslmmba1 <- mutate(mega,diffPVE=pve50-hh50,model='BVSR') %>% dplyr::select(pop,gene,pve50,diffPVE,model)
+bslmmba2 <- mutate(mega,diffPVE=pve50-h2,model='LMM') %>% dplyr::select(pop,gene,pve50,diffPVE,model)
+bslmmba <- rbind(bslmmba1,bslmmba2) %>% mutate(model=factor(model,levels=c('LMM','BVSR')))
+sfigB_bslmm <- ggplot(bslmmba,aes(x=pve50,y=diffPVE,col=model)) + geom_point(shape=1) + facet_wrap(~pop) +
+scale_color_viridis(discrete=TRUE) + labs(x='BSLMM PVE',y='PVE difference (BSLMM - model)',title='B') +
+  geom_hline(yintercept = 0,col='darkgray') +  coord_cartesian(ylim=c(-0.65,0.65)) +
+  theme_bw(14) + theme(legend.justification=c(0,0), legend.position=c(0.88,0.05),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.3, "cm"),legend.background = element_rect(fill="white",size=0.5, linetype="solid", colour ="black"))
+
+sfigC_bslmm <- ggplot(bslmmba,aes(x=pve50,y=diffPVE,col=model)) + geom_density_2d() + facet_wrap(~pop) +
+scale_color_viridis(discrete=TRUE) + labs(x='BSLMM PVE',y='PVE difference (BSLMM - model)',title='C') +
+  geom_hline(yintercept = 0,col='darkgray') + coord_cartesian(ylim=c(-0.06,0.06)) +
+  theme_bw(14) + theme(legend.justification=c(0,0), legend.position=c(0.88,0.05),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.3, "cm"),legend.background = element_rect(fill="white",size=0.5, linetype="solid", colour ="black"))
+
+#make table of diffPVE > 0 counts/percents
+for(p in c('AFA','CAU','HIS')){
+  ba_sub <- dplyr::filter(bslmmba,pop==p,model=='LMM')
+  poscountLMM <- table(ba_sub$diffPVE>0)[[2]]
+  totalLMM <- sum(table(ba_sub$diffPVE>0))
+  propLMM <- signif(poscountLMM/totalLMM,3)
+  ba_sub <- dplyr::filter(bslmmba,pop==p,model=='BVSR')
+  poscountBSLMM <- table(ba_sub$diffPVE>0)[[2]]
+  totalBSLMM <- sum(table(ba_sub$diffPVE>0))
+  propBSLMM <- signif(poscountBSLMM/totalBSLMM,3)
+  restab <- c(p,poscountLMM,totalLMM,propLMM,poscountBSLMM,totalBSLMM,propBSLMM)
+  if(exists('diffPVE_tab_bslmm')){
+    diffPVE_tab_bslmm <- rbind(diffPVE_tab_bslmm, restab)
+  }else{
+    diffPVE_tab_bslmm <- restab
+  }
+}
+colnames(diffPVE_tab_bslmm) <- c("pop","poscount_LMM","total_LMM","prop_LMM","poscount_BVSR","total_BVSR","prop_BVSR")
+print(diffPVE_tab_bslmm)
+xtable(diffPVE_tab_bslmm)
+```
+
+
+## Fig 3
+```{r,fig.width=8,fig.height=7}
+grid.arrange(fig3a, fig3b, nrow=2)
+```
+
+
+```{r}
+tiff("Fig3.tiff", width = 8, height = 7, units = 'in', res = 300, compression = 'lzw')
+grid.arrange(fig3a, fig3b, nrow=2)
+dev.off()
+```

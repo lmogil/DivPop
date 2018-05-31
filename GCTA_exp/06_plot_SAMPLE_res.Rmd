@@ -1,0 +1,39 @@
+---
+title: "06_plot_SAMPLE_res"
+author: "Heather Wheeler"
+date: '`r Sys.time()`'
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+"%&%" = function(a,b) paste(a,b,sep="")
+
+for(pop in c('AFA-CAU','AFA-HIS','CAU-HIS')){
+  res <- read.table(pop %&% '_MESA_Nk-20.local-h2_gen-corr_EXP-SIM-0.2018-03-25.txt',header=T)
+  res <- dplyr::mutate(res,min.h2=ifelse(pop1.h2<pop2.h2,pop1.h2,pop2.h2), max.h2=ifelse(pop1.h2>pop2.h2,pop1.h2,pop2.h2))
+  print(summary(res))
+  print(ggplot(res, aes(x=rG,y=pop1.h2)) + geom_point() + ggtitle(pop))
+  print(ggplot(res, aes(x=rG,y=pop1.se)) + geom_point() + ggtitle(pop))
+  print(ggplot(res, aes(x=pop1.h2,y=pop1.se)) + geom_point() + ggtitle(pop))
+  print(ggplot(res, aes(x=rG,y=pop2.h2)) + geom_point() + ggtitle(pop))
+  print(ggplot(res, aes(x=rG,y=pop2.se)) + geom_point() + ggtitle(pop))
+  print(ggplot(res, aes(x=pop2.h2,y=pop2.se)) + geom_point() + ggtitle(pop))
+  print(ggplot(res, aes(x=pop1.h2,y=pop2.h2,col=rG)) + geom_point()+scale_color_gradientn(colours = rainbow(4)) + ggtitle(pop))
+  print(ggplot(res, aes(x=pop1.h2,y=pop2.h2)) + stat_density_2d(aes(fill = ..level..), geom = "polygon") + ggtitle(pop))
+  print(ggplot(res, aes(x=pop1.h2,y=pop2.h2,col=log10(rG.se))) + geom_point() +scale_color_gradientn(colours = rainbow(4)) + ggtitle(pop))
+  
+  print(ggplot(res, aes(x=rG,y=log10(rG.se),col=min.h2)) + geom_point(alpha=0.5)+scale_color_gradientn(colours = rainbow(4)) + ggtitle(pop))
+  print(ggplot(res, aes(x=rG,y=log10(rG.se),col=max.h2)) + geom_point(alpha=0.5)+scale_color_gradientn(colours = rainbow(4)) + ggtitle(pop))
+  print(ggplot(res, aes(x=rG,y=log10(rG.se))) + stat_density_2d(aes(fill = ..level..), geom = "polygon") +
+    coord_cartesian(xlim=c(-1,1)) + ggtitle(pop))
+  print(ggplot(res, aes(x=rG,y=log10(rG.se))) + stat_density_2d(geom = "point", aes(size = ..density..), n = 20, contour = FALSE) + ggtitle(pop))
+  print(ggplot(res, aes(x=rG)) + geom_density() + ggtitle(pop))
+  print(ggplot(res, aes(x=log10(rG.se))) + geom_density() + ggtitle(pop))
+  print(ggplot(res, aes(x=pop1.h2)) + geom_density() + ggtitle(pop))
+  print(ggplot(res, aes(x=pop2.h2)) + geom_density() + ggtitle(pop))
+  print(ggplot(res, aes(x=rG,y=log10(rG.se))) + geom_bin2d() + ggtitle(pop))
+  print(ggplot(res, aes(x=rG,y=log10(rG.se),col=pop1.h2)) + geom_point() + ggtitle(pop))
+}
+```

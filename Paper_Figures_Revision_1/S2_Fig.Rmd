@@ -1,0 +1,42 @@
+---
+title: "S2 Fig."
+author: "Heather Wheeler"
+date: "`r Sys.time()`"
+output: html_document
+---
+
+### R code for Figures in Mogil et al. "Genetic architecture of gene expression traits across diverse populations" <https://doi.org/10.1101/245761>
+- Revision 1, submitted June 1, 2018
+- S2 Figure
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(viridis)
+library(tidyr)
+library(xtable)
+library(cowplot)
+
+"%&%" = function(a,b) paste(a,b,sep="")
+```
+
+```{r,fig.height=3,fig.width=10}
+my.dir = "/home/lauren/files_for_revisions_plosgen/meqtl_results/"
+eqtl <- read.table(my.dir %&% "MESA_meqtl.cis_summary_2018-05-09.txt",header=TRUE)
+eqtl <- dplyr::filter(eqtl,Nk != 50)
+eqtl <- mutate(eqtl,pc=factor(pc,labels=c('0 PCs','3 PCs','5 PCs','10 PCs')))
+fig <- ggplot(eqtl, aes(x=Nk,y=FDR_0.05,col=pop)) + geom_line() + geom_point() + facet_wrap(~pc,nrow=1) +
+  scale_y_continuous(labels = function(x) format(x, scientific = TRUE)) +
+  scale_color_viridis(discrete = TRUE) + theme_bw(14) + labs(x="Number of Peer Factors",y="Number of eQTLs\n(FDR < 0.05)",col="Population")
+print(fig)
+```
+
+
+```{r}
+tiff("S2_Fig.tiff", width = 10, height = 3, units = 'in', res = 300, compression = 'lzw')
+fig
+dev.off()
+```
+

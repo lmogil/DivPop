@@ -1,0 +1,83 @@
+---
+title: "S4 Fig."
+author: "Heather Wheeler"
+date: "`r Sys.time()`"
+output: html_document
+---
+
+### R code for Figures in Mogil et al. "Genetic architecture of gene expression traits across diverse populations" <https://doi.org/10.1101/245761>
+- Revision 1, submitted June 1, 2018
+- S4 Figure
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(viridis)
+library(tidyr)
+library(xtable)
+library(cowplot)
+
+"%&%" = function(a,b) paste(a,b,sep="")
+```
+
+```{r,fig.width=8,fig.height=10}
+my.dir <- "/home/wheelerlab3/mesa_analyses/"
+for(pop in c('AFA-CAU','AFA-HIS','CAU-HIS')){
+  pres <- read.table(my.dir %&% "GCTA_exp/" %&% pop %&% "_MESA_Nk-20.local-h2_gen-corr_UMich_imp.2018-05-03_with_SNP_count.txt",header=T)
+  pres <- dplyr::mutate(pres,min.h2=ifelse(pop1.h2<pop2.h2,pop1.h2,pop2.h2), max.h2=ifelse(pop1.h2>pop2.h2,pop1.h2,pop2.h2), pop=pop)
+  if(exists('res')){
+    res <- rbind(res, data.frame(pres))
+  }else{
+    res <- data.frame(pres)
+  }
+}
+
+res <- mutate(res,pop=ifelse(pop=="CAU-HIS","HIS-CAU",pop))
+
+sa <- ggplot(res, aes(x=log10(rG.se),y=min.h2,col=max.h2)) + geom_point() +
+  facet_wrap(~pop)  + coord_cartesian(xlim=c(-2,6)) + 
+  theme_bw(14) +  labs(col=expression(paste("max ",h^2)),x=expression(paste(log["10"], " SE")),y=expression(paste("min ", h^2)),title="A")
+
+sb <- ggplot(res, aes(y=rG,x=log10(rG.se))) + stat_density_2d(aes(fill = ..level..), geom = "polygon") + scale_color_viridis() +
+  coord_cartesian(ylim=c(-1,1), xlim=c(-2,6)) + facet_wrap(~pop) + labs(x=expression(paste(log["10"], " SE")),title="B") +
+  theme_bw(14) 
+
+res <- mutate(res,norm.pop1.h2=pop1.h2/pop1.snpcount,norm.pop2.h2=pop2.h2/pop2.snpcount)
+
+calc_mean <- function(df, normh2, poppair){
+  subres <- dplyr::filter(df, pop=='AFA-CAU', norm.pop1.h2 >= normh2)
+  popres <- dplyr::filter(df, pop==poppair, ensid %in% subres$ensid)
+  mean_rG <- mean(popres$rG, na.rm=TRUE)
+  return(mean_rG)
+}
+
+for(poppair in c("AFA-CAU", "AFA-HIS", "HIS-CAU")){
+  for(afah2 in c(0:80/10000)[1:30]){
+    m <- calc_mean(res, afah2, poppair)
+    r <- data.frame(poppair, afah2, m)
+    if(exists('normtoplot')){
+      normtoplot <- rbind(normtoplot, r)
+    }else{
+      normtoplot <- r
+    }
+  }
+}
+colnames(normtoplot) <- c("pop", "h2", "mean_rG")
+
+sc <- ggplot(normtoplot, aes(x=h2,y=mean_rG,col=pop)) + geom_smooth() + scale_color_viridis(discrete=TRUE) +
+  labs(x=expression(paste("normalized ", h^2, " threshold in AFA")),y="mean rG",col="pop pair",title="C") +
+  theme_bw(14)
+rm('normtoplot')
+
+grid.arrange(sa,sb,sc,nrow=3)
+```
+
+
+```{r}
+tiff("S4_Fig.tiff", width = 8, height = 10, units = 'in', res = 300, compression = 'lzw')
+grid.arrange(sa,sb,sc,nrow=3)
+dev.off()
+```
+

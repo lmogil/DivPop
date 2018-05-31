@@ -1,0 +1,275 @@
+---
+title: "00_plot_Fst_v_E-N_results"
+author: "Heather Wheeler"
+date: "`r Sys.time()`"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(viridis)
+
+"%&%" = function(a,b) paste(a,b,sep="")
+my.dir = "/home/lauren/files_for_revisions_plosgen/fst_results/"
+#my.dir = "~/mount/lauren/files_for_revisions_plosgen/fst_results/"
+```
+
+## AFA 
+```{r}
+afa <- fread(my.dir %&% "fst_table_AFA.txt")
+mean_afa <- afa[,list(mean_fstCAUafa=mean(fstCAUafa, na.rm = TRUE),mean_fstAFAhis=mean(fstAFAhis, na.rm = TRUE),
+  R2_AFA=mean(R2_AFA, na.rm = TRUE), R2_CAU=mean(R2_CAU, na.rm = TRUE), 
+  R2_HIS=mean(R2_HIS, na.rm = TRUE), 
+  betaAFA_fstCAUafa=sum(fstCAUafa * abs(betaAFA), na.rm = TRUE)/table(is.na(fstCAUafa * betaAFA))[[1]],
+  betaAFA_fstAFAhis=sum(fstAFAhis * abs(betaAFA), na.rm = TRUE)/table(is.na(fstAFAhis * betaAFA))[[1]]),
+  by=GENE]
+
+mean_afa_0.2 <- dplyr::filter(mean_afa, R2_AFA > 0.2 | R2_CAU > 0.2)
+ggplot(mean_afa_0.2, aes(x=R2_AFA-R2_CAU,y=betaAFA_fstCAUafa)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+ggplot(mean_afa_0.2, aes(x=R2_AFA-R2_CAU,y=mean_fstCAUafa)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+
+mean_afa_0.2 <- dplyr::filter(mean_afa, R2_AFA > 0.2 | R2_HIS > 0.2)
+ggplot(mean_afa_0.2, aes(x=R2_AFA-R2_HIS,y=betaAFA_fstAFAhis)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+ggplot(mean_afa_0.2, aes(x=R2_AFA-R2_HIS,y=mean_fstAFAhis)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+```
+
+## CAU
+```{r}
+cau <- fread(my.dir %&% "fst_table_CAU.txt")
+mean_cau <- cau[,list(mean_fstCAUafa=mean(fstCAUafa, na.rm = TRUE),mean_fstHIScau=mean(fstHIScau, na.rm = TRUE),
+  R2_AFA=mean(R2_AFA, na.rm = TRUE), R2_CAU=mean(R2_CAU, na.rm = TRUE), 
+  R2_HIS=mean(R2_HIS, na.rm = TRUE), 
+  betaCAU_fstCAUafa=sum(fstCAUafa * abs(betaCAU), na.rm = TRUE)/table(is.na(fstCAUafa * betaCAU))[[1]],
+  betaCAU_fstHIScau=sum(fstHIScau * abs(betaCAU), na.rm = TRUE)/table(is.na(fstHIScau * betaCAU))[[1]]),
+  by=GENE]
+
+mean_cau_0.2 <- dplyr::filter(mean_cau, R2_AFA > 0.2 | R2_CAU > 0.2)
+ggplot(mean_cau_0.2, aes(x=R2_CAU-R2_AFA,y=betaCAU_fstCAUafa)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+ggplot(mean_cau_0.2, aes(x=R2_CAU-R2_AFA,y=mean_fstCAUafa)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+
+mean_cau_0.2 <- dplyr::filter(mean_cau, R2_CAU > 0.2 | R2_HIS > 0.2)
+ggplot(mean_cau_0.2, aes(x=R2_CAU-R2_HIS,y=betaCAU_fstHIScau)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+ggplot(mean_cau_0.2, aes(x=R2_CAU-R2_HIS,y=mean_fstHIScau)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+```
+
+## HIS
+```{r}
+his <- fread(my.dir %&% "fst_table_HIS.txt")
+mean_his <- his[,list(mean_fstAFAhis=mean(fstAFAhis, na.rm = TRUE),mean_fstHIScau=mean(fstHIScau, na.rm = TRUE),
+  R2_AFA=mean(R2_AFA, na.rm = TRUE), R2_CAU=mean(R2_CAU, na.rm = TRUE), 
+  R2_HIS=mean(R2_HIS, na.rm = TRUE), 
+  betaHIS_fstAFAhis=sum(fstAFAhis * abs(betaHIS), na.rm = TRUE)/table(is.na(fstAFAhis * betaHIS))[[1]],
+  betaHIS_fstHIScau=sum(fstHIScau * abs(betaHIS), na.rm = TRUE)/table(is.na(fstHIScau * betaHIS))[[1]]),
+  by=GENE]
+
+mean_his_0.2 <- dplyr::filter(mean_his, R2_AFA > 0.2 | R2_HIS > 0.2)
+ggplot(mean_his_0.2, aes(x=R2_HIS-R2_AFA,y=betaHIS_fstAFAhis)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+ggplot(mean_his_0.2, aes(x=R2_HIS-R2_AFA,y=mean_fstAFAhis)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+
+mean_his_0.2 <- dplyr::filter(mean_his, R2_CAU > 0.2 | R2_HIS > 0.2)
+ggplot(mean_his_0.2, aes(x=R2_HIS-R2_CAU,y=betaHIS_fstHIScau)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+ggplot(mean_his_0.2, aes(x=R2_HIS-R2_CAU,y=mean_fstHIScau)) + geom_point() + stat_density_2d(aes(fill = ..level..), geom = "polygon")
+```
+
+## facet_wrap plots
+- Perform a 2D kernel density estimation using kde2d and display the results with contours. This can be useful for dealing with overplotting. This is a 2d version of geom_density.
+- kde2d: Two-dimensional kernel density estimation with an axis-aligned bivariate normal kernel, evaluated on a square grid.
+```{r,fig.width=6,fig.height=8}
+afa_cau <- dplyr::select(mean_afa_0.2, GENE, pop1=R2_AFA, pop2=R2_CAU, mean_Fst=mean_fstCAUafa, beta_Fst=betaAFA_fstCAUafa) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>% 
+  mutate(pop="AFA-CAU",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+afa_his <- dplyr::select(mean_afa_0.2, GENE, pop1=R2_AFA, pop2=R2_HIS, mean_Fst=mean_fstAFAhis, beta_Fst=betaAFA_fstAFAhis) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>% 
+  mutate(pop="AFA-HIS",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+cau_afa <- dplyr::select(mean_cau_0.2, GENE, pop2=R2_AFA, pop1=R2_CAU, mean_Fst=mean_fstCAUafa, beta_Fst=betaCAU_fstCAUafa) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>% 
+  mutate(pop="CAU-AFA",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+cau_his <- dplyr::select(mean_cau_0.2, GENE, pop1=R2_CAU, pop2=R2_HIS, mean_Fst=mean_fstHIScau, beta_Fst=betaCAU_fstHIScau) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>% 
+  mutate(pop="CAU-HIS",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+his_afa <- dplyr::select(mean_his_0.2, GENE, pop2=R2_AFA, pop1=R2_HIS, mean_Fst=mean_fstAFAhis, beta_Fst=betaHIS_fstAFAhis) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>% 
+  mutate(pop="HIS-AFA",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+his_cau <- dplyr::select(mean_his_0.2, GENE, pop2=R2_CAU, pop1=R2_HIS, mean_Fst=mean_fstHIScau, beta_Fst=betaHIS_fstHIScau) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>% 
+  mutate(pop="HIS-CAU",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+all <- rbind(afa_cau,afa_his,cau_afa,cau_his,his_afa,his_cau)
+
+all <- mutate(all,pop=factor(pop,levels=c("AFA-CAU","CAU-AFA","AFA-HIS","HIS-AFA","HIS-CAU","CAU-HIS")))
+all <- all[complete.cases(all),]
+
+sfig1<-ggplot(all, aes(x=diffR2,y=beta_Fst)) + facet_wrap(~pop,nrow=3) + 
+  geom_point(col="gray")+ geom_vline(xintercept=0)  + geom_density_2d() + 
+  labs(x=expression(paste(R^2, " difference (pop1 - pop2)")),y=expression(paste("weighted mean ", F[ST]))) + 
+  theme_bw(14)
+print(sfig1)
+
+sfig2 <-ggplot(all, aes(x=diffR2,y=beta_Fst)) + facet_wrap(~pop,nrow=3)  +
+  geom_point(col="gray") + geom_vline(xintercept=0) + geom_density_2d() + 
+  labs(x=expression(paste(R^2, " difference (pop1 - pop2)")),y=expression(paste("ZOOM weighted mean ", F[ST]))) + 
+  theme_bw(14) + coord_cartesian(ylim=c(0,0.02)) 
+print(sfig2)
+
+ggplot(all, aes(x=diffR2,y=mean_Fst)) + facet_wrap(~pop,nrow=3) + geom_point(col='gray') + geom_vline(xintercept=0) + geom_density_2d() + labs(x=expression(paste(R^2, " difference (pop1 - pop2)")),y=expression(paste("mean ", F[ST]))) + theme_bw(14) 
+```
+
+```{r}
+for(thresh in c(0.1, 0.2, 0.3)){
+  cat(thresh, '\n')
+  newall <- mutate(all,diffGroup=ifelse(diffR2 < (-1*thresh) | diffR2 > thresh, 'large', 'small'))
+  print(with(newall, t.test(mean_Fst[diffGroup=='large'], mean_Fst[diffGroup=='small'])))
+ # print(ggplot(newall, aes(x=mean_Fst,fill=diffGroup)) + geom_density(alpha=0.7) + scale_fill_viridis(discrete=TRUE))
+  print(with(newall, t.test(beta_Fst[diffGroup=='large'], beta_Fst[diffGroup=='small'])))
+  #print(ggplot(newall, aes(x=beta_Fst,fill=diffGroup)) + geom_density(alpha=0.7) + scale_fill_viridis(discrete=TRUE))
+}
+  
+all1 <- mutate(all,diffGroup=ifelse(diffR2 >= (-1*0.1) & diffR2 <= 0.1, '<= t', '> t'),absdiffR2=abs(diffR2),thres='t = 0.1')
+all2 <- mutate(all,diffGroup=ifelse(diffR2 >= (-1*0.2) & diffR2 <= 0.2, '<= t', '> t'),absdiffR2=abs(diffR2),thres='t = 0.2')
+all3 <- mutate(all,diffGroup=ifelse(diffR2 >= (-1*0.3) & diffR2 <= 0.3, '<= t', '> t'),absdiffR2=abs(diffR2),thres='t = 0.3')
+with(all3,t.test(mean_Fst[diffGroup=='> t'], mean_Fst[diffGroup=='<= t']))$p.value
+
+
+newall <- rbind(all1,all2,all3)
+newall <- mutate(newall,diffGroup=factor(diffGroup,levels=c('> t', '<= t')))
+```
+
+```{r,fig.height=3,fig.width=8}
+c <- ggplot(newall, aes(x=mean_Fst,fill=diffGroup)) + geom_density(alpha=0.7)+ facet_wrap(~thres) +
+ labs(x=expression(paste("mean ", F[ST])),title='C',fill=expression(paste("|",R^2, " difference|"))) + theme_bw(14) +  theme(plot.margin=unit(c(0,0.2,0,0.2), "cm")) + scale_fill_viridis(discrete = TRUE) + coord_cartesian(xlim=c(0,0.2)) + theme(legend.justification=c(0,1), legend.position=c(0.85,0.995),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.6, "cm"),plot.margin=unit(c(0,0.2,0,0.2), "cm"))
+print(c)
+
+ggplot(newall, aes(x=beta_Fst,fill=diffGroup)) + geom_density(alpha=0.7)+ facet_wrap(~thres) +
+ labs(x=expression(paste("weighted ", F[ST])),fill=expression(paste("|",R^2, " difference|"))) + theme_bw(14) +  theme(plot.margin=unit(c(0,0.2,0,0.2), "cm")) + scale_fill_viridis(discrete = TRUE) + coord_cartesian(xlim=c(-0.001,0.01))+
+  theme(legend.justification=c(0,1), legend.position=c(0.85,0.99),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.6, "cm"),plot.margin=unit(c(0,0.2,0,0.2), "cm"),axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+```{r,fig.width=8,fig.height=3}
+suball <- dplyr::filter(all, pop=='AFA-CAU' | pop=='AFA-HIS' | pop=='HIS-CAU')
+for(thresh in c(0.1, 0.2, 0.3)){
+  cat(thresh, '\n')
+  newall <- mutate(suball,diffGroup=ifelse(diffR2 < (-1*thresh) | diffR2 > thresh, 'large', 'small'))
+  print(with(newall, t.test(mean_Fst[diffGroup=='large'], mean_Fst[diffGroup=='small'])))
+  print(ggplot(newall, aes(x=mean_Fst,fill=diffGroup)) + geom_density(alpha=0.7) + scale_fill_viridis(discrete=TRUE))
+  print(ggplot(newall, aes(x=mean_Fst,fill=diffGroup)) + geom_density(alpha=0.7) + scale_fill_viridis(discrete=TRUE) + facet_wrap(~pop,scales="free"))
+  print(with(newall, t.test(beta_Fst[diffGroup=='large'], beta_Fst[diffGroup=='small'])))
+  print(ggplot(newall, aes(x=beta_Fst,fill=diffGroup)) + geom_density(alpha=0.7) + scale_fill_viridis(discrete=TRUE))
+  print(ggplot(newall, aes(x=beta_Fst,fill=diffGroup)) + geom_density(alpha=0.7) + scale_fill_viridis(discrete=TRUE) + facet_wrap(~pop,scales="free"))
+}
+  
+
+
+ggplot(suball, aes(x=diffR2,y=mean_Fst)) + facet_wrap(~pop,nrow=1)  + geom_point(col='gray')+ geom_vline(xintercept=0) + 
+  geom_density_2d() + labs(x=expression(paste(R^2, " difference (pop1 - pop2)")),y=expression(paste("mean ", F[ST])),title='C') + theme_bw(14) + coord_cartesian(xlim=c(-0.85,0.85)) + theme(plot.margin=unit(c(0,0.2,0,0.2), "cm")) + scale_color_viridis(discrete = TRUE)
+
+
+
+
+
+
+```
+
+## no filter
+```{r}
+afa_cau <- dplyr::select(mean_afa, GENE, pop1=R2_AFA, pop2=R2_CAU, mean_Fst=mean_fstCAUafa, beta_Fst=betaAFA_fstCAUafa) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>% 
+  mutate(pop="AFA-CAU",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+afa_his <- dplyr::select(mean_afa, GENE, pop1=R2_AFA, pop2=R2_HIS, mean_Fst=mean_fstAFAhis, beta_Fst=betaAFA_fstAFAhis) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>%
+  mutate(pop="AFA-HIS",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+cau_afa <- dplyr::select(mean_cau, GENE, pop2=R2_AFA, pop1=R2_CAU, mean_Fst=mean_fstCAUafa, beta_Fst=betaCAU_fstCAUafa) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>%
+  mutate(pop="CAU-AFA",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+cau_his <- dplyr::select(mean_cau, GENE, pop1=R2_CAU, pop2=R2_HIS, mean_Fst=mean_fstHIScau, beta_Fst=betaCAU_fstHIScau) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>%
+  mutate(pop="CAU-HIS",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+his_afa <- dplyr::select(mean_his, GENE, pop2=R2_AFA, pop1=R2_HIS, mean_Fst=mean_fstAFAhis, beta_Fst=betaHIS_fstAFAhis) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>%
+  mutate(pop="HIS-AFA",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+his_cau <- dplyr::select(mean_his, GENE, pop2=R2_CAU, pop1=R2_HIS, mean_Fst=mean_fstHIScau, beta_Fst=betaHIS_fstHIScau) %>% 
+  mutate(pop1=ifelse(is.na(pop1),0,pop1),pop2=ifelse(is.na(pop2),0,pop2)) %>%
+  mutate(pop="HIS-CAU",diffR2 = pop1 - pop2) %>% select(pop, GENE, pop1, pop2, diffR2, mean_Fst, beta_Fst)
+
+all_nof <- rbind(afa_cau,afa_his,cau_afa,cau_his,his_afa,his_cau)
+all_nof <- all_nof[complete.cases(all_nof),]
+ggplot(all_nof, aes(x=diffR2,y=pop1,col=pop2)) + facet_wrap(~pop,nrow=3) + geom_point() +  labs(x=expression(paste(R^2, " difference (pop1 - pop2)")),y=expression(paste("pop1 ", R^2)),col=expression(paste("pop2 ", R^2))) + theme_bw(14) + 
+  geom_density_2d()
+
+suball_nof <- dplyr::filter(all_nof, pop=='AFA-CAU' | pop=='AFA-HIS' | pop=='HIS-CAU') 
+
+b <- ggplot(suball_nof, aes(x=diffR2,y=pop1,col=pop2)) + facet_wrap(~pop,nrow=1) + geom_point() +  labs(x=expression(paste(R^2, " difference (pop1 - pop2)")),y=expression(paste("pop1 ", R^2)),col=expression(paste("pop2 ", R^2)),title='B') + theme_bw(14) + 
+  scale_color_viridis() + 
+  theme(legend.justification=c(0,1), legend.position=c(0.005,0.995),legend.title = element_text(size=10),legend.text = element_text(size=10),legend.key.size = unit(0.3, "cm"),plot.margin=unit(c(0,0.2,0,0.2), "cm")) + 
+  coord_cartesian(xlim=c(-0.85,0.85)) + geom_density_2d(col='gray') + scale_size(range=c(5,20))
+print(b)
+
+a <- ggplot(suball_nof, aes(x=pop1,y=pop2)) + geom_point() + geom_abline(slope=1,intercept=0,col='blue') + facet_wrap(~pop,nrow=1) + theme_bw(14)+
+  labs(x=expression(paste("pop1 ", R^2)),y=expression(paste("pop2 ", R^2)),title='A') + geom_density_2d(col="gray") +
+  theme(plot.margin=unit(c(0.05,0.2,0,0.2), "cm"))
+dt_suball_nof <- data.table(suball_nof)
+dt_suball_nof[,list(R=cor(pop1,pop2,use='p')),by=pop]
+print(a)
+
+#make Table 3
+ac <- dplyr::filter(dt_suball_nof,pop=='AFA-CAU')
+ah <- dplyr::filter(dt_suball_nof,pop=='AFA-HIS')
+ch <- dplyr::filter(dt_suball_nof,pop=='HIS-CAU')
+
+perfCounts <- function(popdf){
+  print(table(popdf$diffR2 > 0.2))
+  print(table(popdf$diffR2 > 0.2)/dim(popdf)[1])
+  print(table(popdf$diffR2 > (-0.2) & popdf$diffR2 < 0.2))
+  print(table(popdf$diffR2 > (-0.2) & popdf$diffR2 < 0.2)/dim(popdf)[1])
+  print(table(popdf$diffR2 < (-0.2)))
+  print(table(popdf$diffR2 < (-0.2))/dim(popdf)[1])
+  print(dim(popdf)[1])
+}
+
+## AFA-CAU
+perfCounts(ac)
+## AFA-HIS
+perfCounts(ah)
+## HIS-CAU
+perfCounts(ch)
+
+
+table(ac$mean_Fst > 0.3)
+table(ac$mean_Fst > 0.3 & ac$diffR2 > 0)
+```
+
+```{r,fig.width=8,fig.height=10}
+grid.arrange(a, b, c, nrow=3)
+```
+
+```{r}
+ggplot(all,aes(x=pop1,y=mean_Fst,col=pop2)) + geom_point() + geom_density_2d(col='gray') + facet_wrap(~pop,nrow=3) + 
+  scale_color_gradientn(colours = c('blue','pink')) + theme_bw(14) + 
+  labs(x=expression(paste("pop1 ", R^2)),col=expression(paste("pop2 ", R^2)))
+ggplot(all,aes(x=pop1,y=beta_Fst,col=pop2)) + geom_point() + geom_density_2d(col='gray') + facet_wrap(~pop,nrow=3) + 
+   scale_color_gradientn(colours = c('blue','pink')) + theme_bw(14) + 
+  labs(x=expression(paste("pop1 ", R^2)),col=expression(paste("pop2 ", R^2)))
+ggplot(all,aes(x=pop1,y=beta_Fst,col=pop2)) + geom_point() + geom_density_2d(col='gray') + facet_wrap(~pop,nrow=3) + 
+   scale_color_gradientn(colours = c('blue','pink')) + theme_bw(14) + coord_cartesian(ylim=c(0,0.02)) + 
+  labs(x=expression(paste("pop1 ", R^2)),col=expression(paste("pop2 ", R^2)))
+
+ggplot(all,aes(x=mean_Fst,col=pop)) + geom_density() + coord_cartesian(xlim=c(0,0.2))
+ggplot(all,aes(x=beta_Fst,col=pop)) + geom_density() + coord_cartesian(xlim=c(0,0.01))
+```
+
+## Sup Fig Fst
+```{r,fig.width=10,fig.height=7}
+grid.arrange(sfig1, sfig2, nrow=1)
+```
