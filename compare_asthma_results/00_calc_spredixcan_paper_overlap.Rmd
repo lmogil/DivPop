@@ -1,0 +1,25 @@
+---
+title: "00_calc_spredixcan_paper_overlap"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(viridis)
+library(tidyr)
+"%&%" = function(a,b) paste(a,b,sep="")
+
+gwas_res <- scan("/home/wheelerlab3/mesa_analyses/compare_asthma_results/genes_in_Table1and2_and_Fig2_Demenais_2018","c")
+spx <- fread("/home/lauren/files_for_revisions_plosgen/metaxcan_asthma/mesa_asthma_tophits.txt")
+
+spx <- mutate(spx, gwas=gene_name %in% gwas_res)
+table(spx$gwas)
+
+filter(spx,gwas==TRUE) %>% select(gene,gene_name,contains('pvalue'))
+
+stable1 <- rename(spx,implicated_in_GWAS=gwas)
+write.table(stable1, 'S1_Table_S-PrediXcan_asthma_sig_hits.txt',sep='\t',quote=F,row.names = F)
+```

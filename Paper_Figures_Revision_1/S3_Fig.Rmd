@@ -1,0 +1,43 @@
+---
+title: "S3 Fig."
+author: "Heather Wheeler"
+date: "`r Sys.time()`"
+output: html_document
+---
+
+### R code for Figures in Mogil et al. "Genetic architecture of gene expression traits across diverse populations" <https://doi.org/10.1101/245761>
+- Revision 1, submitted June 1, 2018
+- S3 Figure
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(data.table)
+library(viridis)
+library(tidyr)
+library(xtable)
+library(cowplot)
+
+"%&%" = function(a,b) paste(a,b,sep="")
+```
+
+```{r,fig.height=4,fig.width=8}
+allpi1 <- read.table('/home/wheelerlab3/mesa_analyses/qvalue_pi1_pop_replication/eqtl_pi1_2018-05-16.txt',header=T)
+allpi1_g <- tidyr::gather(allpi1,rep_pop,pi1,-disc_pop)
+suballpi1_g <- dplyr::filter(allpi1_g,rep_pop!='GEUYRI0' & rep_pop!='GEUYRI10' & rep_pop!='GEUYRI20' & rep_pop!='GEUYRI30' & rep_pop!='GEUEUR0' & rep_pop!='GEUEUR10' & rep_pop!='GEUEUR20' & rep_pop!='GEUEUR30' & disc_pop!='ALL0' & disc_pop!='ALL10' & disc_pop!='ALL20' & disc_pop!='ALL30' & disc_pop!='AFHI0' & disc_pop!='AFHI10' & disc_pop!='AFHI20' & disc_pop!='AFHI30')
+                             
+fix_allpi1_g <- mutate(suballpi1_g,disc_pop=factor(disc_pop,levels=c('AFA0','AFA10','AFA20','AFA30','CAU0','CAU10','CAU20','CAU30','HIS0','HIS10','HIS20','HIS30','AFHI0','AFHI10','AFHI20','AFHI30','ALL0','ALL10','ALL20','ALL30')),rep_pop=factor(rep_pop,levels=c('AFA0','AFA10','AFA20','AFA30','CAU0','CAU10','CAU20','CAU30','HIS0','HIS10','HIS20','HIS30','FHS0','FHS10','FHS20','FHS30','GEU0','GEU10','GEU20','GEU30','MXL0','MXL10','MXL20','MXL30','YRI0','YRI10','YRI20','YRI30')))
+fig <- ggplot(fix_allpi1_g, aes(x=rep_pop,y=disc_pop,fill=pi1)) + geom_raster() + xlab("Replication Population") + 
+  ylab("Discovery Population") + theme_bw(14)  +
+  scale_fill_viridis(name=expression(pi[1])) + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+print(fig)
+```
+
+
+```{r}
+tiff("S3_Fig.tiff", width = 8, height = 4, units = 'in', res = 300, compression = 'lzw')
+fig
+dev.off()
+```
+

@@ -1,0 +1,178 @@
+---
+title: "17_plot_simu-exp_res_lauren_imp"
+author: "Heather Wheeler"
+date: '`r Sys.time()`'
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(data.table)
+library(gridExtra)
+library(xtable)
+library(viridis)
+"%&%" = function(a,b) paste(a,b,sep="")
+date <- Sys.Date()
+my.dir <- "/home/wheelerlab3/mesa_analyses/"
+#my.dir <- "~/mount/wheelerlab3/mesa_analyses/"
+
+#read in EXP-SIM rG results
+for(pop in c('AFA-CAU','AFA-HIS','CAU-HIS')){
+  obs <- fread(my.dir %&% "GCTA_exp/" %&% pop %&% "_MESA_Nk-20.local-h2_gen-corr_UMich_imp.2018-05-03.txt") %>% 
+    dplyr::mutate(data="obs")
+  sims <- obs
+  for(i in c(0:9)){
+    a <- fread(my.dir %&% "GCTA_exp/" %&% pop %&% "_MESA_Nk-20.local-h2_gen-corr_EXP-SIM-" %&% i %&% "_UMich_imp.2018-05-03.txt") %>% dplyr::mutate(data="sim" %&% i)
+    sims <- rbind(sims, a)
+
+  }
+  print(ggplot(sims,aes(x=rG, color=data)) + geom_density() + ggtitle(pop) +
+    scale_color_manual(values = c('red',gray.colors(10, start=0.5))) + theme_classic(14))
+  summary(sims)
+
+  print(ggplot(sims,aes(x=data,y=rG)) + geom_boxplot() + ggtitle(pop))
+  print(ggplot(sims,aes(x=data,y=rG)) + geom_violin() + ggtitle(pop) + stat_summary(fun.y=mean, geom="point", color="blue", size=3))
+
+  print(ggplot(sims,aes(x=pop1.h2,y=rG)) + geom_smooth() + facet_wrap(~data) + ggtitle(pop))
+  rm(sims)
+}
+```
+
+```{r, fig.width=10}
+for(pop in c('AFA-CAU','AFA-HIS','CAU-HIS')){
+  obs <- fread(my.dir %&% "GCTA_exp/" %&% pop %&% "_MESA_Nk-20.local-h2_gen-corr_UMich_imp.2018-05-03.txt") %>% 
+    dplyr::mutate(data="obs " %&% pop)
+  if(exists('sims')){
+    sims <- rbind(sims, obs)
+  }else{
+    sims <- obs
+  }
+  for(i in c(0:9)){
+    a <- fread(my.dir %&% "GCTA_exp/" %&% pop %&% "_MESA_Nk-20.local-h2_gen-corr_EXP-SIM-" %&% i %&% "_UMich_imp.2018-05-03.txt") %>% dplyr::mutate(data="sim " %&% pop)
+    sims <- rbind(sims, a)
+  }
+}
+print(ggplot(sims,aes(x=rG, color=data)) + geom_density() + ggtitle(pop))
+summary(sims)
+
+sims <- mutate(sims,data=ifelse(data=='obs CAU-HIS','obs HIS-CAU',data))
+sims <- mutate(sims,data=ifelse(data=='sim CAU-HIS','sim HIS-CAU',data))
+
+print(ggplot(sims,aes(x=data,y=rG)) + geom_boxplot() + ggtitle(pop))
+c <- ggplot(sims,aes(x=data,y=rG)) + geom_violin() + stat_summary(fun.y=mean, geom="point", color="blue", size=3) +
+        labs(x="",title="C") + theme_bw(14)
+print(c)
+
+simsdt <- data.table(sims)
+simsdt[,list(mean=mean(rG,na.rm=TRUE),se=sd(rG,na.rm=TRUE)/sqrt(length(rG[!is.na(rG)])),converged=length(rG[!is.na(rG)])),by='data']
+
+
+print(ggplot(sims,aes(x=pop1.h2,y=rG)) + geom_smooth() + facet_wrap(~data) + ggtitle(pop))
+
+
+```
+
+
+### Paper Fig 2
+```{r}
+for(pop in c('AFA-CAU','AFA-HIS','CAU-HIS')){
+  pres <- read.table(my.dir %&% "GCTA_exp/" %&% pop %&% "_MESA_Nk-20.local-h2_gen-corr_UMich_imp.2018-05-03_with_SNP_count.txt",header=T)
+  pres <- dplyr::mutate(pres,min.h2=ifelse(pop1.h2<pop2.h2,pop1.h2,pop2.h2), max.h2=ifelse(pop1.h2>pop2.h2,pop1.h2,pop2.h2), pop=pop)
+  if(exists('res')){
+    res <- rbind(res, data.frame(pres))
+  }else{
+    res <- data.frame(pres)
+  }
+}
+
+res <- mutate(res,pop=ifelse(pop=="CAU-HIS","HIS-CAU",pop))
+
+#Table 2 Stats
+resdt <- data.table(res)
+tab2 <- resdt[,list(mean=mean(rG,na.rm=TRUE),se=sd(rG,na.rm=TRUE)/sqrt(length(rG[!is.na(rG)])),converged=length(rG[!is.na(rG)])),by='pop']
+print(tab2)
+xtable(tab2)
+
+
+a <- ggplot(res, aes(x=rG,y=min.h2,col=max.h2)) + geom_point() +
+  coord_cartesian(xlim=c(-1,1)) + facet_wrap(~pop)  + 
+  theme_bw(14) +  labs(col=expression(paste("max ",h^2)),y=expression(paste("min ", h^2)),title="A") + 
+  theme(legend.justification=c(0,1), legend.position=c(0.005,0.995),legend.title = element_text(size=8),legend.text = element_text(size=8),legend.key.size = unit(0.2, "cm"))
+print(a)
+
+ggplot(res, aes(x=log10(rG.se),y=min.h2,col=max.h2)) + geom_point() +
+  facet_wrap(~pop)  +
+  theme_bw(14) +  labs(col=expression(paste("max ",h^2)),y=expression(paste("min ", h^2)))
+
+
+#Comparison of the genetic correlation between pairwise MESA populations and the subset of genes with heritability (h\textsuperscript{2}) greater than a given threshold in AFA
+
+calc_mean <- function(df, h2, poppair){
+  subres <- dplyr::filter(df, pop=='AFA-CAU', pop1.h2 >= h2)
+  popres <- dplyr::filter(df, pop==poppair, ensid %in% subres$ensid)
+  mean_rG <- mean(popres$rG, na.rm=TRUE)
+  return(mean_rG)
+}
+
+for(poppair in c("AFA-CAU", "AFA-HIS", "HIS-CAU")){
+  for(afah2 in c(0:16/20)){
+    m <- calc_mean(res, afah2, poppair)
+    r <- data.frame(poppair, afah2, m)
+    if(exists('toplot')){
+      toplot <- rbind(toplot, r)
+    }else{
+      toplot <- r
+    }
+  }
+}
+colnames(toplot) <- c("pop", "h2", "mean_rG")
+
+b <- ggplot(toplot, aes(x=h2,y=mean_rG,col=pop)) + geom_smooth() + scale_color_viridis(discrete=TRUE) +
+  labs(x=expression(paste(h^2, " threshold in AFA")),y="mean rG",col="pop pair",title="B") +
+  theme_bw(14)
+```
+
+```{r, fig.width=8,fig.height=10}
+grid.arrange(a,b,c,nrow=3)
+```
+
+## Supp Fig, norm h2 and rG SE
+```{r, fig.width=8,fig.height=10}
+sa <- ggplot(res, aes(x=log10(rG.se),y=min.h2,col=max.h2)) + geom_point() +
+  facet_wrap(~pop)  + coord_cartesian(xlim=c(-2,6)) + 
+  theme_bw(14) +  labs(col=expression(paste("max ",h^2)),x=expression(paste(log["10"], " SE")),y=expression(paste("min ", h^2)),title="A")
+
+sb <- ggplot(res, aes(y=rG,x=log10(rG.se))) + stat_density_2d(aes(fill = ..level..), geom = "polygon") + scale_color_viridis() +
+  coord_cartesian(ylim=c(-1,1), xlim=c(-2,6)) + facet_wrap(~pop) + labs(x=expression(paste(log["10"], " SE")),title="B") +
+  theme_bw(14) 
+
+res <- mutate(res,norm.pop1.h2=pop1.h2/pop1.snpcount,norm.pop2.h2=pop2.h2/pop2.snpcount)
+
+calc_mean <- function(df, normh2, poppair){
+  subres <- dplyr::filter(df, pop=='AFA-CAU', norm.pop1.h2 >= normh2)
+  popres <- dplyr::filter(df, pop==poppair, ensid %in% subres$ensid)
+  mean_rG <- mean(popres$rG, na.rm=TRUE)
+  return(mean_rG)
+}
+
+for(poppair in c("AFA-CAU", "AFA-HIS", "HIS-CAU")){
+  for(afah2 in c(0:80/10000)[1:30]){
+    m <- calc_mean(res, afah2, poppair)
+    r <- data.frame(poppair, afah2, m)
+    if(exists('normtoplot')){
+      normtoplot <- rbind(normtoplot, r)
+    }else{
+      normtoplot <- r
+    }
+  }
+}
+colnames(normtoplot) <- c("pop", "h2", "mean_rG")
+
+sc <- ggplot(normtoplot, aes(x=h2,y=mean_rG,col=pop)) + geom_smooth() + scale_color_viridis(discrete=TRUE) +
+  labs(x=expression(paste("normalized ", h^2, " threshold in AFA")),y="mean rG",col="pop pair",title="C") +
+  theme_bw(14)
+rm('normtoplot')
+
+grid.arrange(sa,sb,sc,nrow=3)
+```
