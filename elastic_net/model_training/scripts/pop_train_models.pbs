@@ -1,0 +1,12 @@
+#!/bin/bash
+
+#PBS -S /bin/bash
+#PBS -l walltime=100:00:00
+#PBS -l nodes=1:ppn=1
+#PBS -l mem=16gb
+#PBS -d /home/lauren/PredictDB_Pipeline_GTEx_v7/model_training/scripts/
+#PBS -e ../joblogs/${PBS_JOBNAME}.err
+#PBS -o ../joblogs/${PBS_JOBNAME}.out
+
+module load R/3.4.1
+Rscript pop_train.R ${tiss} ${chrom}
